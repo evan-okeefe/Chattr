@@ -13,6 +13,7 @@
 - **Changelog**: View updates and fixes for each version.
 - **Clear Terminal UI**: Simple and clean interface with ASCII art header.
 - **Users**: Chattr allows for multiple users, or even multiple poeple using ssh to connect to the same user
+- **Profiles**: Save/Load user profiles so you don't need to manually change your preferences every time
 
 ## Requirements
 
