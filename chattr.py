@@ -5,10 +5,11 @@ import threading
 from datetime import datetime
 
 CHAT_FILE = "/tmp/chattr.txt"
+FILE_PATH ="chattr"
+STOP_EVENT = None
+VERSION = "1.0.2"
 
 USERNAME = "Anonymous"
-STOP_EVENT = None
-VERSION = "1.0.1"
 USERNAME_COLOR = "\x1b[0m"
 INPUT_COLOR = "\x1b[92m"
 SYSTEM_MESSAGES = True
@@ -84,6 +85,9 @@ def changelog():
     #For additions: \x1b[32m
     #For fixes: \x1b[38;5;208m
     print(
+        "\x1b[91mV1.0.2\n"
+        "\x1b[32m   Added the ability to save/load user profiles\n"
+        "\n"
         "\x1b[91mV1.0.1:\n"
         "\x1b[32m   Added a settings menu\n"
         "\x1b[32m   Added customizations for the user\n"
@@ -95,7 +99,7 @@ def changelog():
     start()
 
 def settings():
-    valid_options = {"0", "1", "2"}
+    valid_options = {"0", "1", "2", "3"}
 
     option = ""
     while True:
@@ -104,7 +108,8 @@ def settings():
         user_input = input(
             "\x1b[31m[0]User         "
             "\x1b[34m[1]Appearance\n"
-            "\x1b[32m[2]Return\n"
+            "\x1b[32m[2]Save/Load    "
+            "\x1b[33m[3]Return\n"
             "\x1b[0m"
         )
         if user_input in valid_options:
@@ -115,8 +120,34 @@ def settings():
     if option == "1":
         appearance()
     if option == "2":
+        saveload()
+    if option == "3":
         start()
     
+def saveload():
+
+    valid_options = {"0", "1", "2"}
+
+    option = ""
+    while True:
+        clear_terminal()
+        header()
+        user_input = input(
+            "\x1b[31m[0]Save         "
+            "\x1b[34m[1]Load\n"
+            "\x1b[32m[2]Return\n"
+            "\x1b[0m"
+        )
+        if user_input in valid_options:
+            option = user_input
+            break
+    if option == "0":
+        write_settings()
+    if option == "1":
+        load_settings()
+    if option == "2":
+        settings()
+
 def appearance():
     valid_options = {"0", "1", "2", "3"}
     global INPUT_COLOR, SYSTEM_MESSAGES
@@ -269,5 +300,75 @@ def header():
     """)
     print(f"\x1b[35mchattr v{VERSION}\x1b[0m" \
     "")
+
+
+def write_settings():
+    global USERNAME, USERNAME_COLOR, INPUT_COLOR, SYSTEM_MESSAGES, FILE_PATH
+    clear_terminal()
+    header()
+
+    name = input(f"\x1b[92mWhat would you like to save the profile as?\n{INPUT_COLOR}> \x1b[0m").replace(" ", "-")
+
+    file_name = f"{name}.pf"
+
+    file_path = f"{FILE_PATH}/{file_name}"
+
+    os.makedirs(FILE_PATH, exist_ok=True)
+
+    try:
+        with open(file_path, "x") as f:
+            f.write(
+                f"{USERNAME}\n"
+                f"{USERNAME_COLOR}\n"
+                f"{INPUT_COLOR}\n"
+                f"{SYSTEM_MESSAGES}\n"
+            )
+    except FileExistsError:
+        with open(file_path, "w") as f:
+            f.write(
+                f"{USERNAME}\n"
+                f"{USERNAME_COLOR}\n"
+                f"{INPUT_COLOR}\n"
+                f"{SYSTEM_MESSAGES}\n"
+            )
+
+    saveload()
+
+def load_settings():
+    global USERNAME, USERNAME_COLOR, INPUT_COLOR, SYSTEM_MESSAGES, FILE_PATH
+    clear_terminal()
+    header()
+
+    os.makedirs(FILE_PATH, exist_ok=True)
+
+    profiles = [f for f in os.listdir(FILE_PATH) if f.endswith(".pf")]
+    if not profiles:
+        print("No profiles found.")
+        input("Press enter to return...")
+        saveload()
+        return
+
+    print("Available profiles:")
+    for idx, profile in enumerate(profiles):
+        print(f"\x1b[94m[{idx}] {profile}")
+
+    inp = int(input(f"\x1b[92mWhich profile would you like to load (put the number)?\n{INPUT_COLOR}> \x1b[0m"))
+    
+    if inp < 0 or inp >= len(profiles):
+        load_settings()
+        return
+
+    file_name = f"{FILE_PATH}/{profiles[inp]}"
+    with open(file_name, "r") as f:
+        lines = f.readlines()
+        if len(lines) >= 4:
+            USERNAME = lines[0].strip()
+            USERNAME_COLOR = lines[1].strip()
+            INPUT_COLOR = lines[2].strip()
+            SYSTEM_MESSAGES = lines[3].strip() == "True"
+
+    print("\x1b[92mProfile loaded.")
+    input("Press enter to return...\x1b[0m")
+    start()
 
 start()
