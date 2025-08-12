@@ -8,7 +8,7 @@ DEFAULT_CHAT_FILE = "/tmp/chattr/chattr.txt"
 CHAT_FILE = DEFAULT_CHAT_FILE
 FILE_PATH ="chattr"
 STOP_EVENT = None
-VERSION = "1.3.0"
+VERSION = "1.3.1"
 
 USERNAME = "Anonymous"
 anon = False
@@ -88,6 +88,9 @@ def changelog():
     #For additions: \x1b[32m
     #For fixes: \x1b[38;5;208m
     print(
+        "\x1b[91mV1.3.1\n"
+        "\x1b[38;5;208m   Fixed a bug where certain python versions couldn't run the program\n"
+        "\n"
         "\x1b[91mV1.3.0\n"
         "\x1b[32m   Made /lv a shorthand for /leave\n"
         "\x1b[32m   Added the /help (/h) command\n"
@@ -321,7 +324,7 @@ def chat():
                 else:
                     print(f"{INPUT_COLOR}Joined channel {channel_name}\n\x1b[0m")
             elif msg.lower() == "/name" or msg.lower() == "/n":
-                channel_name = CHAT_FILE.removeprefix("/tmp/chattr/").removesuffix(".txt")
+                channel_name = CHAT_FILE.removeprefix("/tmp/chattr/").removesuffix('.txt')
                 if channel_name == "chattr":
                     channel_name = "Main"
                 print(f"{INPUT_COLOR}Current Channel is: {channel_name}\n\x1b[0m")
@@ -330,28 +333,28 @@ def chat():
                 header()
                 print("Type /h or /help to list commands.\n")
             elif msg.lower() == "/list" or msg.lower() == "/ls":
-                channels = [f for f in os.listdir("/tmp/chattr") if f.endswith(".txt")]
+                channels = [f for f in os.listdir("/tmp/chattr") if f.endswith('.txt')]
                 for channel in channels:
                     if channel.startswith("."):
                         continue
                     if channel == "chattr.txt":
                         print(f"{INPUT_COLOR}Main ")
                     else:
-                        print(f"{INPUT_COLOR}{channel.removesuffix(".txt")} ")
+                        print(f"{INPUT_COLOR}{channel.removesuffix('.txt')} ")
             elif msg.lower() == "/secret" or msg.lower() == "/s":
-                channels = [f for f in os.listdir("/tmp/chattr") if f.endswith(".txt")]
+                channels = [f for f in os.listdir("/tmp/chattr") if f.endswith('.txt')]
                 for channel in channels:
                     if not channel.startswith("."):
                         continue
                     if channel == "chattr.txt":
                         print(f"{INPUT_COLOR}Main ")
                     else:
-                        print(f"{INPUT_COLOR}{channel.removesuffix(".txt")} ")
+                        print(f"{INPUT_COLOR}{channel.removesuffix('.txt')} ")
             elif msg.lower() == "/anonymous" or msg.lower() == "/a":
                 anon = not anon
                 print(f"{INPUT_COLOR}Toggled anonymous mode\n")
             elif msg.lower() == "/remove" or msg.lower() == "/rm":
-                channel_name = CHAT_FILE.removeprefix("/tmp/chattr/").removesuffix(".txt")
+                channel_name = CHAT_FILE.removeprefix("/tmp/chattr/").removesuffix('.txt')
                 if channel_name == "chattr":
                     print(f"{INPUT_COLOR}You cannot remove the main channel")
                 else:
