@@ -4,15 +4,19 @@ import time
 import threading
 from datetime import datetime
 
-CHAT_FILE = "/tmp/chattr.txt"
+DEFAULT_CHAT_FILE = "/tmp/chattr/chattr.txt"
+CHAT_FILE = DEFAULT_CHAT_FILE
 FILE_PATH ="chattr"
 STOP_EVENT = None
-VERSION = "1.0.2"
+VERSION = "1.3.0"
 
 USERNAME = "Anonymous"
+anon = False
 USERNAME_COLOR = "\x1b[0m"
 INPUT_COLOR = "\x1b[92m"
 SYSTEM_MESSAGES = True
+
+os.makedirs(os.path.dirname(CHAT_FILE), exist_ok=True)
 
 if not os.path.exists(CHAT_FILE):
     open(CHAT_FILE, "w").close()
@@ -50,7 +54,6 @@ def read_messages(se):
             else:
                 time.sleep(0.1)
 
-
 def start():
 
     valid_options = {"0", "1", "2", "3"}
@@ -85,10 +88,21 @@ def changelog():
     #For additions: \x1b[32m
     #For fixes: \x1b[38;5;208m
     print(
-        "\x1b[91mV1.0.2\n"
+        "\x1b[91mV1.3.0\n"
+        "\x1b[32m   Made /lv a shorthand for /leave\n"
+        "\x1b[32m   Added the /help (/h) command\n"
+        "\x1b[32m   Added the /channel (/ch) command\n"
+        "\x1b[32m   Added the /remove (/rm) command\n"
+        "\x1b[32m   Added the /name (/n) command\n"
+        "\x1b[32m   Added the /list (/ls) command\n"
+        "\x1b[32m   Added the /clear (/cl) command\n"
+        "\x1b[32m   Added the /anonymous (/a) command\n"
+        "\x1b[32m   Added the /secret (/s) command\n"
+        "\n"
+        "\x1b[91mV1.2.0\n"
         "\x1b[32m   Added the ability to save/load user profiles\n"
         "\n"
-        "\x1b[91mV1.0.1:\n"
+        "\x1b[91mV1.1.0:\n"
         "\x1b[32m   Added a settings menu\n"
         "\x1b[32m   Added customizations for the user\n"
         "\x1b[32m   Added customizations for the chat\n"
@@ -249,26 +263,24 @@ def user():
     elif option == "2":
         settings()
 
-
-
 def chat():
     clear_terminal()
     header()
-    global stop_event
+    global stop_event, anon, CHAT_FILE, DEFAULT_CHAT_FILE
     stop_event = threading.Event()
 
     timestamp = datetime.now().strftime("%H:%M:%S")
     with open(CHAT_FILE, "a") as f:
         f.write(f"-=-={USERNAME} connected=-=-\n")
 
-    print("Type /leave to exit.\n")
+    print("Type /h or /help to list commands.\n")
 
     threading.Thread(target=read_messages, args=(stop_event,), daemon=True).start()
 
     while True:
         try:
             msg = input(f"{INPUT_COLOR}> \x1b[0m").strip()
-            if msg.lower() == "/leave":
+            if msg.lower() == "/leave" or msg.lower() == "/lv":
                 timestamp = datetime.now().strftime("%H:%M:%S")
                 with open(CHAT_FILE, "a") as f:
                     f.write(f"-=-={USERNAME} disconnected=-=-\n")
@@ -278,9 +290,91 @@ def chat():
 
                 start()
                 break  # break to exit the while loop after start()
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            with open(CHAT_FILE, "a") as f:
-                f.write(f"[{timestamp}] {USERNAME_COLOR}{USERNAME}\x1b[0m: {msg}\n")
+            elif msg.lower() == "/help" or msg.lower() == "/h":
+                print(
+                    f"{INPUT_COLOR}/h /help - Lists all commands\n"
+                    f"{INPUT_COLOR}/lv /leave - Disconnect from the chat\n"
+                    f"{INPUT_COLOR}/ch /channel - Create or Join a channel (Leave arguments blank to join main channel)\n"
+                    f"{INPUT_COLOR}/rm /remove - Delete the current channel (Cannot use in the main channel)\n"
+                    f"{INPUT_COLOR}/n /name - Tell what channel you are currently in\n"
+                    f"{INPUT_COLOR}/ls /list - list all open channels\n"
+                    f"{INPUT_COLOR}/cl /clear - Clear the chat (User end)\n"
+                    f"{INPUT_COLOR}/a /anonymous - Toggle anonymous mode\n\x1b[0m"
+                    )
+            elif msg.lower().startswith("/channel") or msg.lower().startswith("/ch"):
+                channel_name = msg.split(maxsplit=1)[1].strip() if len(msg.split(maxsplit=1)) > 1 else "chattr"
+                channel_name = channel_name.replace(" ", "-")
+
+                if channel_name.lower() == "main":
+                    channel_name = "chattr"
+
+                CHAT_FILE = f"/tmp/chattr/{channel_name}.txt"
+
+                if not os.path.exists(CHAT_FILE):
+                    open(CHAT_FILE, "w").close()
+
+                stop_event.set()  # stop old reader
+                stop_event = threading.Event()
+                threading.Thread(target=read_messages, args=(stop_event,), daemon=True).start()
+                if channel_name == "chattr":
+                    print(f"{INPUT_COLOR}Joined main channel\n\x1b[0m")
+                else:
+                    print(f"{INPUT_COLOR}Joined channel {channel_name}\n\x1b[0m")
+            elif msg.lower() == "/name" or msg.lower() == "/n":
+                channel_name = CHAT_FILE.removeprefix("/tmp/chattr/").removesuffix(".txt")
+                if channel_name == "chattr":
+                    channel_name = "Main"
+                print(f"{INPUT_COLOR}Current Channel is: {channel_name}\n\x1b[0m")
+            elif msg.lower() == "/clear" or msg.lower() == "/cl":
+                clear_terminal()
+                header()
+                print("Type /h or /help to list commands.\n")
+            elif msg.lower() == "/list" or msg.lower() == "/ls":
+                channels = [f for f in os.listdir("/tmp/chattr") if f.endswith(".txt")]
+                for channel in channels:
+                    if channel.startswith("."):
+                        continue
+                    if channel == "chattr.txt":
+                        print(f"{INPUT_COLOR}Main ")
+                    else:
+                        print(f"{INPUT_COLOR}{channel.removesuffix(".txt")} ")
+            elif msg.lower() == "/secret" or msg.lower() == "/s":
+                channels = [f for f in os.listdir("/tmp/chattr") if f.endswith(".txt")]
+                for channel in channels:
+                    if not channel.startswith("."):
+                        continue
+                    if channel == "chattr.txt":
+                        print(f"{INPUT_COLOR}Main ")
+                    else:
+                        print(f"{INPUT_COLOR}{channel.removesuffix(".txt")} ")
+            elif msg.lower() == "/anonymous" or msg.lower() == "/a":
+                anon = not anon
+                print(f"{INPUT_COLOR}Toggled anonymous mode\n")
+            elif msg.lower() == "/remove" or msg.lower() == "/rm":
+                channel_name = CHAT_FILE.removeprefix("/tmp/chattr/").removesuffix(".txt")
+                if channel_name == "chattr":
+                    print(f"{INPUT_COLOR}You cannot remove the main channel")
+                else:
+                    file_to_remove = CHAT_FILE
+                    CHAT_FILE = DEFAULT_CHAT_FILE
+
+                    stop_event.set()
+                    stop_event = threading.Event()
+                    threading.Thread(target=read_messages, args=(stop_event,), daemon=True).start()
+                    try:
+                        os.remove(file_to_remove)
+                        print(f"Room removed successfully.")
+                    except FileNotFoundError:
+                        print(f"This should never run")
+                    except Exception as e:
+                        print(f"An error occurred: {e}")
+            else:
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                with open(CHAT_FILE, "a") as f:
+                    if anon:
+                        f.write(msg)
+                    else:
+                        f.write(f"[{timestamp}] {USERNAME_COLOR}{USERNAME}\x1b[0m: {msg}\n")
         except (KeyboardInterrupt, EOFError):
             stop_event.set()
             break
@@ -300,7 +394,6 @@ def header():
     """)
     print(f"\x1b[35mchattr v{VERSION}\x1b[0m" \
     "")
-
 
 def write_settings():
     global USERNAME, USERNAME_COLOR, INPUT_COLOR, SYSTEM_MESSAGES, FILE_PATH
