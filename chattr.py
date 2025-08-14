@@ -8,7 +8,7 @@ DEFAULT_CHAT_FILE = "/tmp/chattr/chattr.txt"
 CHAT_FILE = DEFAULT_CHAT_FILE
 FILE_PATH ="chattr"
 STOP_EVENT = None
-VERSION = "1.4.0"
+VERSION = "1.4.1"
 
 USERNAME = "Guest"
 anon = False
@@ -48,7 +48,7 @@ def read_messages(se):
                         continue
                 
                 if line.startswith("-=-=") and line.rstrip().endswith("=-=-"):
-                    print(f"{INPUT_COLOR}{line.strip()}\n{INPUT_COLOR}> \x1b[0m", end="", flush=True)
+                    print(f"{INPUT_COLOR}{line.strip()}\n> \x1b[0m", end="", flush=True)
                 else:
                     print(f"\r{line.strip()}\n{INPUT_COLOR}> \x1b[0m", end="", flush=True)
             else:
@@ -88,9 +88,14 @@ def changelog():
     #For additions: \x1b[32m
     #For fixes: \x1b[38;5;208m
     print(
+        "\x1b[91mV1.4.1\n"
+        "\x1b[38;5;208m   Fixed new lines being inconsistant across commands\n"
+        "\x1b[38;5;208m   Fixed successful remove command not being colored with users preference\n"
+        "\x1b[38;5;208m   Fixed incorrect colors with changelog V1.4.0"
+        "\n"
         "\x1b[91mV1.4.0\n"
-        "\x1b[38;5;208m   Changed channels that start with \".\" from hidden channels to password protected channels\n"
-        "\x1b[38;5;208m   Changed default username from \"Anonymous\" to \"Guest\"\n"
+        "\x1b[32m   Changed channels that start with \".\" from hidden channels to password protected channels\n"
+        "\x1b[32m   Changed default username from \"Anonymous\" to \"Guest\"\n"
         "\n"
         "\x1b[91mV1.3.1\n"
         "\x1b[38;5;208m   Fixed a bug where certain python versions couldn't run the program\n"
@@ -324,7 +329,7 @@ def chat():
                         stop_event.set()
                         stop_event = threading.Event()
                         threading.Thread(target=read_messages, args=(stop_event,), daemon=True).start()
-                        print(f"{INPUT_COLOR}Joined channel {channel_name}\n\x1b[0m")
+                        print(f"{INPUT_COLOR}Joined channel {channel_name}\x1b[0m")
                     else:
                         password = input(f"{INPUT_COLOR}Enter Password: \x1b[0m")
                         with open(f"/tmp/chattr/{channel_name}.txt", "r") as f:
@@ -337,7 +342,7 @@ def chat():
                             if channel_name == "chattr":
                                 print(f"{INPUT_COLOR}Joined main channel\n\x1b[0m")
                             else:
-                                print(f"{INPUT_COLOR}Joined channel {channel_name}\n\x1b[0m")
+                                print(f"{INPUT_COLOR}Joined channel {channel_name}\x1b[0m")
                         else:
                             print(f"{INPUT_COLOR}Incorrect Password")
 
@@ -351,14 +356,14 @@ def chat():
                     stop_event = threading.Event()
                     threading.Thread(target=read_messages, args=(stop_event,), daemon=True).start()
                     if channel_name == "chattr":
-                        print(f"{INPUT_COLOR}Joined main channel\n\x1b[0m")
+                        print(f"{INPUT_COLOR}Joined main channel\x1b[0m")
                     else:
-                        print(f"{INPUT_COLOR}Joined channel {channel_name}\n\x1b[0m")
+                        print(f"{INPUT_COLOR}Joined channel {channel_name}\x1b[0m")
             elif msg.lower() == "/name" or msg.lower() == "/n":
                 channel_name = CHAT_FILE.removeprefix("/tmp/chattr/").removesuffix('.txt')
                 if channel_name == "chattr":
                     channel_name = "Main"
-                print(f"{INPUT_COLOR}Current Channel is: {channel_name}\n\x1b[0m")
+                print(f"{INPUT_COLOR}Current Channel is: {channel_name}\x1b[0m")
             elif msg.lower() == "/clear" or msg.lower() == "/cl":
                 clear_terminal()
                 header()
@@ -386,7 +391,7 @@ def chat():
                     threading.Thread(target=read_messages, args=(stop_event,), daemon=True).start()
                     try:
                         os.remove(file_to_remove)
-                        print(f"Room removed successfully.")
+                        print(f"{INPUT_COLOR}Room removed successfully.")
                     except FileNotFoundError:
                         print(f"This should never run")
                     except Exception as e:
