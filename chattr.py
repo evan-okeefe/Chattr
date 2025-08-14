@@ -8,9 +8,9 @@ DEFAULT_CHAT_FILE = "/tmp/chattr/chattr.txt"
 CHAT_FILE = DEFAULT_CHAT_FILE
 FILE_PATH ="chattr"
 STOP_EVENT = None
-VERSION = "1.3.1"
+VERSION = "1.4.0"
 
-USERNAME = "Anonymous"
+USERNAME = "Guest"
 anon = False
 USERNAME_COLOR = "\x1b[0m"
 INPUT_COLOR = "\x1b[92m"
@@ -88,6 +88,10 @@ def changelog():
     #For additions: \x1b[32m
     #For fixes: \x1b[38;5;208m
     print(
+        "\x1b[91mV1.4.0\n"
+        "\x1b[38;5;208m   Changed channels that start with \".\" from hidden channels to password protected channels\n"
+        "\x1b[38;5;208m   Changed default username from \"Anonymous\" to \"Guest\"\n"
+        "\n"
         "\x1b[91mV1.3.1\n"
         "\x1b[38;5;208m   Fixed a bug where certain python versions couldn't run the program\n"
         "\n"
@@ -288,11 +292,10 @@ def chat():
                 with open(CHAT_FILE, "a") as f:
                     f.write(f"-=-={USERNAME} disconnected=-=-\n")
 
-                # Signal the read_messages thread to stop
                 stop_event.set()
 
                 start()
-                break  # break to exit the while loop after start()
+                break
             elif msg.lower() == "/help" or msg.lower() == "/h":
                 print(
                     f"{INPUT_COLOR}/h /help - Lists all commands\n"
@@ -311,18 +314,46 @@ def chat():
                 if channel_name.lower() == "main":
                     channel_name = "chattr"
 
-                CHAT_FILE = f"/tmp/chattr/{channel_name}.txt"
+                if channel_name.startswith("."):
+                    password = ""
+                    if not os.path.exists(f"/tmp/chattr/{channel_name}.txt"):
+                        password = input(f"{INPUT_COLOR}Enter Password to be used: \x1b[0m")
+                        CHAT_FILE = f"/tmp/chattr/{channel_name}.txt"
+                        with open(CHAT_FILE, "w") as f:
+                            f.write(password + "\n")
+                        stop_event.set()
+                        stop_event = threading.Event()
+                        threading.Thread(target=read_messages, args=(stop_event,), daemon=True).start()
+                        print(f"{INPUT_COLOR}Joined channel {channel_name}\n\x1b[0m")
+                    else:
+                        password = input(f"{INPUT_COLOR}Enter Password: \x1b[0m")
+                        with open(f"/tmp/chattr/{channel_name}.txt", "r") as f:
+                            stored_password = f.readline().strip('\n')
+                        if password == stored_password:
+                            CHAT_FILE = f"/tmp/chattr/{channel_name}.txt"
+                            stop_event.set()
+                            stop_event = threading.Event()
+                            threading.Thread(target=read_messages, args=(stop_event,), daemon=True).start()
+                            if channel_name == "chattr":
+                                print(f"{INPUT_COLOR}Joined main channel\n\x1b[0m")
+                            else:
+                                print(f"{INPUT_COLOR}Joined channel {channel_name}\n\x1b[0m")
+                        else:
+                            print(f"{INPUT_COLOR}Incorrect Password")
 
-                if not os.path.exists(CHAT_FILE):
-                    open(CHAT_FILE, "w").close()
-
-                stop_event.set()  # stop old reader
-                stop_event = threading.Event()
-                threading.Thread(target=read_messages, args=(stop_event,), daemon=True).start()
-                if channel_name == "chattr":
-                    print(f"{INPUT_COLOR}Joined main channel\n\x1b[0m")
                 else:
-                    print(f"{INPUT_COLOR}Joined channel {channel_name}\n\x1b[0m")
+                    CHAT_FILE = f"/tmp/chattr/{channel_name}.txt"
+
+                    if not os.path.exists(CHAT_FILE):
+                        open(CHAT_FILE, "w").close()
+
+                    stop_event.set()
+                    stop_event = threading.Event()
+                    threading.Thread(target=read_messages, args=(stop_event,), daemon=True).start()
+                    if channel_name == "chattr":
+                        print(f"{INPUT_COLOR}Joined main channel\n\x1b[0m")
+                    else:
+                        print(f"{INPUT_COLOR}Joined channel {channel_name}\n\x1b[0m")
             elif msg.lower() == "/name" or msg.lower() == "/n":
                 channel_name = CHAT_FILE.removeprefix("/tmp/chattr/").removesuffix('.txt')
                 if channel_name == "chattr":
@@ -335,17 +366,6 @@ def chat():
             elif msg.lower() == "/list" or msg.lower() == "/ls":
                 channels = [f for f in os.listdir("/tmp/chattr") if f.endswith('.txt')]
                 for channel in channels:
-                    if channel.startswith("."):
-                        continue
-                    if channel == "chattr.txt":
-                        print(f"{INPUT_COLOR}Main ")
-                    else:
-                        print(f"{INPUT_COLOR}{channel.removesuffix('.txt')} ")
-            elif msg.lower() == "/secret" or msg.lower() == "/s":
-                channels = [f for f in os.listdir("/tmp/chattr") if f.endswith('.txt')]
-                for channel in channels:
-                    if not channel.startswith("."):
-                        continue
                     if channel == "chattr.txt":
                         print(f"{INPUT_COLOR}Main ")
                     else:
@@ -375,7 +395,7 @@ def chat():
                 timestamp = datetime.now().strftime("%H:%M:%S")
                 with open(CHAT_FILE, "a") as f:
                     if anon:
-                        f.write(msg)
+                        f.write(msg + "\n")
                     else:
                         f.write(f"[{timestamp}] {USERNAME_COLOR}{USERNAME}\x1b[0m: {msg}\n")
         except (KeyboardInterrupt, EOFError):
